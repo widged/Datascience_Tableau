@@ -11,15 +11,17 @@
     chart.render = function() {
         $el.attr("class", "barChart");
 
-        var projection = d3.geo.albersUsa();
+        var projection = d3.geo.albersUsa().scale(700);
+        // var projection = d3.geo.albers().scale(600).center([0,55]);
 
         var svg = $el.append("svg")
             .attr("width", width)
             .attr("height", height);
 
-        var g = svg.append("g");
+        var g1 = svg.append("g");
+        g1.attr("transform", "translate(-130,-30)");
 
-        g.attr("tranfsorm", "scale(.3, .3)");
+        var g = g1.append("g");
 
         d3.json('json/us-states.json', function(collection) {
           g.selectAll('path')
@@ -34,6 +36,8 @@
           })
           .style("stroke", "white")
           .style("stroke-width", 1);
+
+
         });
     };
 

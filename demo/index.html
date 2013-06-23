@@ -135,7 +135,7 @@ function renderBar(data, $chart) {
 
   var chart = chartlib.BarChart()
             .$element($chart)
-            .width(800).height(800)
+            .width(700).height(800)
             .data(data)
             .fillScale([0,max], chartlib.ColorScheme().BLUE_RED)
    chart.render()   
@@ -157,7 +157,7 @@ function renderMap(data, $chart) {
 
   var chart = chartlib.MapChart()
             .$element($chart)
-            .width(1000).height(500)
+            .width(700).height(500)
             .data(data)
             .fillScale([0,max], chartlib.ColorScheme().GREEN_RED)
    chart.render()   
@@ -180,7 +180,7 @@ function convertTimeSeries(data) {
 function renderTimeSeries(data, $chart) {
   var chart = chartlib.TimeSeries()
             .$element($chart)
-            .width(800).height(300)
+            .width(700).height(300)
             .data(data)
             .xConfig({label: "", type: "time", convert: d3.time.format("%d-%m-%Y").parse })
             .yConfig({label: "# Records"})
@@ -222,7 +222,7 @@ function renderLine(data, $chart) {
   var colors = d3.scale.category10();
   var chart = chartlib.LineChart()
             .$element($chart)
-            .width(800).height(500)
+            .width(700).height(500)
             .data(data)
             .xConfig({label: "", type: "time", convert: d3.time.format("%Y").parse })
             .yConfig({label: "# Records", colors: colors})
@@ -230,7 +230,7 @@ function renderLine(data, $chart) {
 
   var legend = chartlib.Legend()
             .$element(svg)
-            .right(800)
+            .right(700)
             .width(150)
             .data({lines: data.lines, colors: colors})
   
