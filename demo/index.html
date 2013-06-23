@@ -103,6 +103,31 @@ function convertDefault(data) {
 }
 
 /* -----------------------*/
+/* ---    map    --*/
+/* -----------------------*/
+
+function renderMap(data, $chart) {
+  var max, ignore = ["N/A", "N"];
+
+  for (var x in data) {
+    var y = data[x][0].count;
+    if(ignore.indexOf(x) !== -1) { continue; }
+    if(!max || y > max) { max = y; }
+  }
+
+  var chart = chartlib.MapChart()
+            .$element($chart)
+            .width(700).height(400)
+            .data(data)
+            .fillScale([0,max], chartlib.ColorScheme().GREEN_RED)
+   chart.render()   
+
+  $chart.append('html').text('The fill color shows the number of records for a given state. Green = lowest, Red = highest')
+
+}
+
+
+/* -----------------------*/
 /* ---    barChart    --*/
 /* -----------------------*/
 
@@ -139,30 +164,10 @@ function renderBar(data, $chart) {
             .data(data)
             .fillScale([0,max], chartlib.ColorScheme().BLUE_RED)
    chart.render()   
+
+  $chart.append('html').text('The fill color shows the total cost in $ for the incident. Blue = lowest, Red = highest')
+
 }
-
-
-/* -----------------------*/
-/* ---    map    --*/
-/* -----------------------*/
-
-function renderMap(data, $chart) {
-  var max, ignore = ["N/A", "N"];
-
-  for (var x in data) {
-    var y = data[x][0].count;
-    if(ignore.indexOf(x) !== -1) { continue; }
-    if(!max || y > max) { max = y; }
-  }
-
-  var chart = chartlib.MapChart()
-            .$element($chart)
-            .width(700).height(500)
-            .data(data)
-            .fillScale([0,max], chartlib.ColorScheme().GREEN_RED)
-   chart.render()   
-}
-
 
 
 /* -----------------------*/
