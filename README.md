@@ -1,4 +1,4 @@
 Datascience_Tableau
 ===================
 
-Tableau assignment with D3JS
+Tableau assignment with d3js
