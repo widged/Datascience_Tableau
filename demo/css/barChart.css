@@ -1,0 +1,23 @@
+/* -----------------------*/
+/* ---    barChart    --*/
+/* -----------------------*/
+
+.barChart .bar {
+  fill: steelblue;
+}
+
+.barChart .axis text {
+  font: 10px sans-serif;
+}
+
+.barChart  text {
+  font: 10px sans-serif;
+  fill: #000000;
+}
+
+.barChart .axis path,
+.barChart .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
