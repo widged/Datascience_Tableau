@@ -4,244 +4,262 @@
   <meta charset="UTF-8">
   <title>Data Science</title>
  <link rel="stylesheet" href="css/style.css" type="text/css">
- <link rel="stylesheet" href="css/barChart.css" type="text/css">
- <link rel="stylesheet" href="css/timeSeries.css" type="text/css">
- <link rel="stylesheet" href="css/lineChart.css" type="text/css">
 </head>
 <body>
 
-<div id="charts">
-</div>
+<div id="charts"></div>
 
-<script>
-var chartlib = {};
-</script>
-
-<script src="d3.v3.min.js"></script>
-<script src="js/ColorScheme.js"></script>
-<script src="js/MapChart.js"></script>
-<script src="js/Legend.js"></script>
-<script src="js/BarChart.js"></script>
-<script src="js/TimeSeries.js"></script>
-<script src="js/LineChart.js"></script>
-<script src="js/Set.js"></script>
+<script src="js/libs/require/require.2.0.6.js"></script>
+<script src="js/require-config.js"></script>
 
 <script>
 
-loadFileData(withData)
+requirejs(['d3', 'set'], function(d3, Set) {
 
-function loadFileData(async) {
-  d3.text("data/birdOut.json", function(d) { 
-  d = JSON.parse(d);
-  async(d);
- }); 
-}
+  loadFileData(withData)
 
-function loadMockData(async) {
-  var $el = document.getElementById('data');
-  async(JSON.parse($el.innerHTML));
-}
+  function loadFileData(async) {
+    d3.text("data/birdOut.json", function(d) { 
+    d = JSON.parse(d);
+    async(d);
+   }); 
+  }
+
+  function loadMockData(async) {
+    var $el = document.getElementById('data');
+    async(JSON.parse($el.innerHTML));
+  }
 
 
-function withData(analyses) {
+  function withData(analyses) {
+    
 
-  var $container = d3.select("#charts");
-  var $portlet   = $container.selectAll(".portlet").data(analyses);
-  $portlet.exit().remove();
+    var $container = d3.select("#charts");
+    var $portlet   = $container.selectAll(".portlet").data(analyses);
+    $portlet.exit().remove();
 
-  $portlet.enter()
-    .append("div")
-    .attr("class", function(d) { return "portlet"; });
+    $portlet.enter()
+      .append("div")
+      .attr("class", function(d) { return "portlet"; });
 
-  var $question = $portlet.append("div").html(function(d, index) {   return "<h2>" + d.question + "</h2>";  });
+    var $question = $portlet.append("div").html(function(d, index) {   return "<h2>" + d.question + "</h2>";  });
 
-  var $chart  = $portlet.append("div").attr("class", "chart");
-  
-  $chart.each(function(a) {
-    chartAnalyse(a, d3.select(this))
-  })
-  return;
-}
+    var $chart  = $portlet.append("div").attr("class", "chart");
+    
+    $chart.each(function(a) {
+      chartAnalyse(a, d3.select(this))
+    })
+    return;
+  }
 
-function chartAnalyse(a, $chart) {
-  var fnData, fnRender;
-    if(a.chart) {
-      var type = a.chart.type;
-      if(type === "bar") {
-        fnData = convertBar;
-        fnRender = renderBar
-      } else if(type === "table") {
-        fnRender = renderTable;
-      } else if(type === "timeseries") {
-        fnData = convertTimeSeries;
-        fnRender = renderTimeSeries;
-     } else if(type === "line") {
-        fnData = convertLine;
-        fnRender = renderLine;
-      } else if(type === "map") {
-        fnRender = renderMap;
+  function chartAnalyse(a, $chart) {
+      var fn;
+      var fnByType = { 
+        bar :        { convert: convertBar, render: renderBar},
+        table :      { convert: null, render: renderTable},
+        timeseries : { convert: convertTimeSeries, render: renderTimeSeries},
+        line :       { convert: convertLine, render: renderLine},
+        map :        { convert: null, render: renderMap}
+      };
+
+      if(a.chart) {
+        var type = a.chart.type;
+        if(fnByType.hasOwnProperty(type)) { 
+          fn = fnByType[type];
+        }
+      } 
+      if(fn) {
+        if(!fn.convert) { fn.convert = convertDefault; }
+        var data = fn.convert(a.data)
+        if(data !== undefined && fn.render !== undefined) {
+          fn.render(data, $chart);      
+        } else {
+          console.log("Nothing to do, no chart defined for analyse", a);
+        }  
+
       }
-    } 
 
-    if(fnData === undefined) { fnData = convertDefault; }
-    var data = fnData(a.data)
-    if(data !== undefined && fnRender !== undefined) {
-      fnRender(data, $chart);      
-    } else {
-      console.log("Nothing to do, no chart defined for analyse", a);
-    }  
-}
-
-function renderTable(data, $chart) {
-  var count = data.all[0].count;
-  $chart
-  .append("html").text("Count:" + count + "")
-}
-
-function convertDefault(data) {
-  return data;
-}
-
-/* -----------------------*/
-/* ---    map    --*/
-/* -----------------------*/
-
-function renderMap(data, $chart) {
-  var max, ignore = ["N/A", "N"];
-
-  for (var x in data) {
-    var y = data[x][0].count;
-    if(ignore.indexOf(x) !== -1) { continue; }
-    if(!max || y > max) { max = y; }
   }
 
-  var chart = chartlib.MapChart()
-            .$element($chart)
-            .width(700).height(400)
-            .data(data)
-            .fillScale([0,max], chartlib.ColorScheme().GREEN_RED)
-   chart.render()   
-
-  $chart.append('html').text('The fill color shows the number of records for a given state. Green = lowest, Red = highest')
-
-}
-
-
-/* -----------------------*/
-/* ---    barChart    --*/
-/* -----------------------*/
-
-function convertBar(data) {
-  var labels, kv, ignore = ["N/A", "N"];
-
-  labels = [];
-  for (var x in data) {
-    if(ignore.indexOf(x) !== -1) { continue; }
-    if(labels.indexOf(x) === -1) { labels.push({id: x, d: data[x]}); }
+  function convertDefault(data) {
+    return data;
   }
-  labels.sort(function(a, b) {
-    return b.d[0].count - a.d[0].count;
+
+  /* -----------------------*/
+  /* ---    table    --*/
+  /* -----------------------*/
+
+  function renderTable(data, $chart) {
+    var count = data.all[0].count;
+    $chart
+    .append("html").text("Count:" + count + "")
+  }
+
+
+  /* -----------------------*/
+  /* ---    map    --*/
+  /* -----------------------*/
+
+  function renderMap(data, $chart) {
+
+
+    var max, ignore = ["N/A", "N"];
+
+    for (var x in data) {
+      var y = data[x][0].count;
+      if(ignore.indexOf(x) !== -1) { continue; }
+      if(!max || y > max) { max = y; }
+    }
+
+    requirejs(['mapchart','colorscheme'], function(MapChart, ColorScheme) {
+
+      var chart = MapChart.instance()
+                .appendTo($chart)
+                .width(700).height(400)
+                .data(data)
+                .fillScale([0,max], ColorScheme.GREEN_RED)
+       chart.render()   
+
+      $chart.append('html').text('The fill color shows the number of records for a given state. Green = lowest, Red = highest')
+
+    });
+
+
+  }
+
+
+  /* -----------------------*/
+  /* ---    barChart    --*/
+  /* -----------------------*/
+
+  function convertBar(data) {
+    var labels, kv, ignore = ["N/A", "N"];
+
+    labels = [];
+    for (var x in data) {
+      if(ignore.indexOf(x) !== -1) { continue; }
+      if(labels.indexOf(x) === -1) { labels.push({id: x, d: data[x]}); }
+    }
+    labels.sort(function(a, b) {
+      return b.d[0].count - a.d[0].count;
+    });
+
+    kv = [];
+    labels.forEach(function(d) {
+      kv.push({key: d.id, barSize: d.d[0].count, fill: d.d[1].sum})
+    })
+    return kv;
+  }
+
+
+  function renderBar(data, $chart) {
+    var max;
+    data.forEach(function(d, i) {
+      var y = d.fill;
+      if(!max || y > max) { max = y; }
+    }) 
+
+    requirejs(['barchart','colorscheme','domutil'], function(BarChart, ColorScheme, DomUtil) {
+      DomUtil.includeStyleSheetOnce('css/barChart.css');
+      var chart = BarChart.instance()
+                .appendTo($chart)
+                .width(700).height(800)
+                .data(data)
+                .fillScale([0,max], ColorScheme.BLUE_RED)
+       chart.render()   
+
+      $chart.append('html').text('The fill color shows the total cost in $ for the incident. Blue = lowest, Red = highest')
+    });
+  }
+
+
+  /* -----------------------*/
+  /* ---    timeSeries    --*/
+  /* -----------------------*/
+
+  function convertTimeSeries(data) {
+    var out = [], d;
+    for (var x in data) {
+      out.push({x: x, y: data[x][0].count})
+    }
+    return out;
+  }
+
+  function renderTimeSeries(data, $chart) {
+
+    requirejs(['timeseries', 'domutil'], function(TimeSeries, DomUtil) {
+
+      DomUtil.includeStyleSheetOnce('css/timeSeries.css');
+
+      var chart = TimeSeries.instance()
+                .appendTo($chart)
+                .width(700).height(300)
+                .data(data)
+                .xConfig({label: "", type: "time", convert: d3.time.format("%d-%m-%Y").parse })
+                .yConfig({label: "# Records"})
+       chart.render()   
+   });
+  }
+
+  /* -----------------------*/
+  /* ---    Line    --*/
+  /* -----------------------*/
+
+  function convertLine(data) {
+    var out = [], temp = [], ignore = ["N/A", "N", "None", ""];
+
+
+    var lineSet = Set.instance(), lineIdx;
+    var xSet = Set.instance(), xIdx;
+
+    for (var x in data) {
+      var dims = x.split("|");
+
+      if(ignore.indexOf(dims[0]) !== -1) { dims[0] = "None & N/A"; }
+      lineIdx = lineSet.add(dims[0])
+      xIdx = xSet.add(dims[1]);
+      y = data[x][0].count;
+
+      if(!temp[xIdx]) { temp[xIdx] = []; }
+      temp[xIdx][lineIdx] = y;
+    }
+
+    var lines = lineSet.data()
+    var dates = xSet.data()
+
+    temp.forEach(function(d,i) {
+      out.push({x: dates[i], y: temp[i] })
+    })
+    out = {lines: lines, x: dates, data: out};
+    return out;
+  }
+
+  function renderLine(data, $chart) {
+    var colors = d3.scale.category10();
+
+    requirejs(['linechart','legend', "domutil"], function(LineChart, Legend, DomUtil) {
+
+      DomUtil.includeStyleSheetOnce('css/lineChart.css');
+
+      var chart = LineChart.instance()
+                .appendTo($chart)
+                .width(700).height(500)
+                .data(data)
+                .xConfig({label: "", type: "time", convert: d3.time.format("%Y").parse })
+                .yConfig({label: "# Records", colors: colors})
+
+       var svg = chart.render();  
+
+      var legend = Legend.instance()
+                .appendTo(svg)
+                .right(700)
+                .width(150)
+                .data({lines: data.lines, colors: colors})
+      
+      legend.render();
   });
-
-  kv = [];
-  labels.forEach(function(d) {
-    kv.push({key: d.id, barSize: d.d[0].count, fill: d.d[1].sum})
-  })
-  return kv;
-}
-
-
-function renderBar(data, $chart) {
-  var max;
-  data.forEach(function(d, i) {
-    var y = d.fill;
-    if(!max || y > max) { max = y; }
-  }) 
-
-  var chart = chartlib.BarChart()
-            .$element($chart)
-            .width(700).height(800)
-            .data(data)
-            .fillScale([0,max], chartlib.ColorScheme().BLUE_RED)
-   chart.render()   
-
-  $chart.append('html').text('The fill color shows the total cost in $ for the incident. Blue = lowest, Red = highest')
-
-}
-
-
-/* -----------------------*/
-/* ---    timeSeries    --*/
-/* -----------------------*/
-
-function convertTimeSeries(data) {
-  var out = [], d;
-  for (var x in data) {
-    out.push({x: x, y: data[x][0].count})
   }
-  return out;
-}
-
-function renderTimeSeries(data, $chart) {
-  var chart = chartlib.TimeSeries()
-            .$element($chart)
-            .width(700).height(300)
-            .data(data)
-            .xConfig({label: "", type: "time", convert: d3.time.format("%d-%m-%Y").parse })
-            .yConfig({label: "# Records"})
-   chart.render()   
-}
-
-/* -----------------------*/
-/* ---    Line    --*/
-/* -----------------------*/
-
-function convertLine(data) {
-  var out = [], temp = [], ignore = ["N/A", "N", "None", ""];
-  var lineSet = chartlib.Set(), lineIdx;
-  var xSet = chartlib.Set(), xIdx;
-
-  for (var x in data) {
-    var dims = x.split("|");
-
-    if(ignore.indexOf(dims[0]) !== -1) { dims[0] = "None & N/A"; }
-    lineIdx = lineSet.add(dims[0])
-    xIdx = xSet.add(dims[1]);
-    y = data[x][0].count;
-
-    if(!temp[xIdx]) { temp[xIdx] = []; }
-    temp[xIdx][lineIdx] = y;
-  }
-
-  var lines = lineSet.data()
-  var dates = xSet.data()
-
-  temp.forEach(function(d,i) {
-    out.push({x: dates[i], y: temp[i] })
-  })
-  out = {lines: lines, x: dates, data: out};
-  return out;
-}
-
-function renderLine(data, $chart) {
-  var colors = d3.scale.category10();
-  var chart = chartlib.LineChart()
-            .$element($chart)
-            .width(700).height(500)
-            .data(data)
-            .xConfig({label: "", type: "time", convert: d3.time.format("%Y").parse })
-            .yConfig({label: "# Records", colors: colors})
-   var svg = chart.render();  
-
-  var legend = chartlib.Legend()
-            .$element(svg)
-            .right(700)
-            .width(150)
-            .data({lines: data.lines, colors: colors})
-  
-  legend.render();
-
-}
+});
 
 
   </script>

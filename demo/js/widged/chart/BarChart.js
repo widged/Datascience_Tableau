@@ -1,14 +1,30 @@
-(function () {
-  function BarChart() {
+define(['chartbase','classutil','d3'], function(ChartBase, ClassUtil, d3) {
 
-    var data, $el, fillScale, sizeScale, width, height;
+  var Class = ChartBase.subclass();
 
-    function instance() {
+  Class.instance = function() {
 
+    var instance = Class.instanceGenerator(), s = {};
+
+    function warnChange() { dataChange = true; }
+
+    var access              = ClassUtil.accessMaker(s, instance);
+    instance.fillScale      = access.getSet("fillScale", [beforeSetFillScale, warnChange]);
+    instance.sizeScale      = access.getSet("sizeScale", [warnChange]);
+
+    function beforeSetFillScale(extend, scheme, updateValue) {
+      var min = extend[0], max = extend[1];
+      var scale = d3.scale.linear()
+                .domain([min, (min + max) / 2, max])
+                .range([scheme[0], "#d6d6d6", scheme[1]]);
+      updateValue(scale);
     }
 
+
     instance.render = function() {
-        $el.attr("class", "barChart");
+
+        var data = instance.data(), width = instance.width(), height = instance.height(), fillScale = s.fillScale, sizeScale = s.sizeScale;
+
 
         var margin = {top: 20, right: 10, bottom: 10, left: 10},
             innerWidth = width - margin.left - margin.right,
@@ -28,13 +44,7 @@
             .scale(x)
             .orient("top");
 
-        var svg = $el.append("svg")
-            .attr("width", width)
-            .attr("height", height);
-
-        var g = svg.append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
+         var g = instance.viewPort("barChart");
          var bar = g.selectAll(".bar")
               .data(data)
               .enter().append("g").attr("class", "bar");
@@ -77,40 +87,12 @@
     };
 
 
-    instance.data = function(_) {
-      if (!arguments.length) return data;
-      data = _;
-      return instance;
-    };
-
-    instance.$element = function(_) {
-      if (!arguments.length) return $el;
-      $el = _;
-      return instance;
-    };
-
-    instance.fillScale = function(extend, scheme) {
-      if (!arguments.length) return fillScale;
-      var min = extend[0], max = extend[1];
-      fillScale = d3.scale.linear()
-                .domain([min, (min + max) / 2, max])
-                .range([scheme[0], "#d6d6d6", scheme[1]]);
-      return instance;
-    };
-
-    instance.width = function(_) {
-      if (!arguments.length) return width;
-      width = _;
-      return instance;
-    };
-
-    instance.height = function(_) {
-      if (!arguments.length) return height;
-      height = _;
-      return instance;
-    };
 
     return instance;
-  }
-  chartlib.BarChart = BarChart;
-}(chartlib));
+
+
+  };
+
+  return Class;
+
+});

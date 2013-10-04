@@ -1,12 +1,12 @@
-(function () {
+define(function(){
 
-function Set() {
+  var Class = {};
 
-  var keys   = [];
+  Class.instance = function(){
 
-    function instance() {
-      return keys;
-    }
+    var keys   = [];
+
+    var instance = {};
 
     instance.add = function(k) {
       var i = keys.indexOf(k);
@@ -19,7 +19,9 @@ function Set() {
     };
 
   return instance;
-}
 
-  chartlib.Set = Set;
-}(chartlib));
+
+ };
+ return Class;
+
+});

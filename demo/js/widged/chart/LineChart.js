@@ -1,22 +1,32 @@
-(function () {
+define(['chartbase','classutil','d3'], function(ChartBase, ClassUtil, d3) {
 
-  function LineChart() {
+  var Class = ChartBase.subclass(), FN = PureFunctions();
 
-    var data, $el,
-        width, height,
-        xConfig, yConfig;
+  Class.instance = function() {
 
-    function instance() { }
+    var instance = Class.instanceGenerator(), s = {};
 
-    instance.render = function() {
-      $el.attr("class", "lineChart");
+    function warnChange() { dataChange = true; }
+
+    var access              = ClassUtil.accessMaker(s, instance);
+    instance.appendTo       = access.getSet("appendTo", [warnChange]);
+    instance.data           = access.getSet("data",   [warnChange]);
+    instance.width          = access.getSet("width",  [warnChange]);
+    instance.height         = access.getSet("height", [warnChange]);
+    instance.xConfig        = access.getSet("xConfig", [warnChange]);
+    instance.yConfig       = access.getSet("yConfig", [warnChange]);
+
+
+  instance.render = function() {
+
+      var data = instance.data(), width = instance.width(), height = instance.height(), xConfig = s.xConfig, yConfig = s.yConfig;
 
       var margin = {top: 20, right: 50, bottom: 30, left: 50},
             innerWidth = width - margin.left - margin.right,
             innerHeight = height - margin.top - margin.bottom;
 
-      var x = getScale(xConfig.type, 0, innerWidth);
-      var y = getScale(yConfig.type, innerHeight, 0);
+      var x = FN.getScale(xConfig.type, 0, innerWidth);
+      var y = FN.getScale(yConfig.type, innerHeight, 0);
 
       var xAxis = d3.svg.axis()
           .scale(x)
@@ -26,28 +36,25 @@
           .scale(y)
           .orient("left");
 
-      var svg = $el.append("svg")
-          .attr("width", width)
-          .attr("height", height)
-        .append("g")
-          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
         data.data.sort(function(a, b) {
           return a.x - b.x;
         });
 
         var lineData = data.data;
-        cleanData(lineData);
+        var convertFn  = s.xConfig.convert || function(x) { return x; };
+        FN.cleanData(lineData, convertFn);
 
         x.domain([lineData[0].x, lineData[lineData.length - 1].x]);
         y.domain(lineData.yExtent);
 
-        svg.append("g")
+        var g = instance.viewPort("lineChart", margin);
+        g.append("g")
             .attr("class", "x axis")
             .attr("transform", "translate(0," + innerHeight + ")")
             .call(xAxis);
 
-        svg.append("g")
+        g.append("g")
             .attr("class", "y axis")
             .call(yAxis)
           .append("text")
@@ -63,65 +70,29 @@
             .x(function(d) { return x(d.x); })
             .y(function(d) { var dy = d.y[i] || 0; return y(dy); });
 
-        svg.append("path")
+        g.append("path")
             .datum(lineData)
             .attr("class", "line")
             .attr("d", line)
             .attr("stroke",colors(i));
       });
 
-      return svg;
+      return g;
     };
 
-/* -----------------------------*/
-/* ---    Getters, Setters    --*/
-/* -----------------------------*/
+     return instance;
+  };
 
-    instance.data = function(_) {
-      if (!arguments.length) return data;
-      data = _;
-      return instance;
-    };
+   /**
+    Functions with no side effect and no dependency on any instance state variable
+   */
+   function PureFunctions() {
+      var FN = {};
 
-    instance.$element = function(_) {
-      if (!arguments.length) return $el;
-      $el = _;
-      return instance;
-    };
-
-    instance.width = function(_) {
-      if (!arguments.length) return width;
-      width = _;
-      return instance;
-    };
-
-    instance.height = function(_) {
-      if (!arguments.length) return height;
-      height = _;
-      return instance;
-    };
-
-    instance.yConfig = function(_) {
-      if (!arguments.length) return yConfig;
-      yConfig = _;
-      return instance;
-    };
-
-    instance.xConfig = function(_) {
-      if (!arguments.length) return xConfig;
-      xConfig = _;
-      if(xConfig.convert === undefined) { xConfig.convert = function(x) { return x; }; }
-      return instance;
-    };
-
-/* -----------------------------*/
-/* ---    Utilities           --*/
-/* -----------------------------*/
-
-      function cleanData(lineData) {
+      FN.cleanData = function(lineData, convertFn) {
         var min, max;
         lineData.forEach(function(d) {
-          d.x = xConfig.convert(d.x);
+          d.x = convertFn(d.x);
           d.y.forEach(function(dy, i) {
             d.y[i] = +parseFloat(d.y[i]);
             if(min === undefined || dy < min) { min = dy; }
@@ -129,10 +100,10 @@
           });
         });
         lineData.yExtent = [min, max];
-      }
+      };
 
 
-    function getScale(type, min, max) {
+    FN.getScale = function(type, min, max) {
       var out;
       if(type === "time") {
          out = d3.time.scale()
@@ -142,11 +113,10 @@
                 .range([min, max]);
       }
       return out;
-    }
+    };
 
-
-    return instance;
+    return FN;
   }
 
-  chartlib.LineChart = LineChart;
-}(chartlib));
+  return Class;
+});
